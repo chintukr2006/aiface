@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body{
+            justify-content: center;
+            background:linear-gradient(-234deg,rgb(11, 0, 161),rgb(255, 3, 192));
+        }
+        .star {
+            position: absolute;
+            border-radius: 90%;
+            background-color: rgb(255, 255, 255);
+            width: 9px;
+            height: 9px;
+        }
+        .desin,i{
+            position: relative;
+            font-size: 10px;
+            color:white;
+            margin-left:10px;
+            font-size: 28px;
+        }
+        hr{
+            width:53%;
+            color: rgb(51, 38, 37);
+            margin-left:0px;
+            padding:0px;
+            background-color: rgb(83, 23, 23);
+        }
+        .imagedeg{
+            padding:10px;
+            top:200px;
+            margin-left: 70px;
+            height:330px;
+            width:370px;
+            position: relative;
+            transform:rotate3d(1,1,0,45deg);
+        }
+        .border{
+            background:linear-gradient(-234deg,rgb(97, 89, 211),rgb(245, 73, 202));
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 330px;
+            text-align: center;
+            top: 50%;
+            left: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+        }
+        .border3{
+            border-radius: 17px;
+            width: 54vw;
+            height: 85vh;
+            top:50%;
+            left:50%;
+            background: #8a8b92;
+        }
+        input[type='text']{
+            width: 20vw;
+            height: 5vh;
+            border-radius: 13px;
+        }
+        input[type='submit']{
+            width: 20vw;
+            height: 6vh;
+            border-radius: 15px;
+            background: linear-gradient(123deg ,rgb(78, 198, 202) ,rgb(231, 140, 240));
+        }
+        label{
+            font-size: 20px;
+            color: black;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -55%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+          }
+          .close-btn {
+            display: flex;
+            color: red;
+            cursor: pointer;
+            float: right;
+            font-size: 42px;
+            margin-right: 12px;
+          }        
+    </style>
+</head>
+<body>
+    <label class="desin">
+        <a href="#" onclick="document.getElementById('image1').click()">
+            <input type="file" id="image1" hidden>
+            <i style="color: rgb(255, 255, 255);">Add image</i>
+        </a>
+        <a href="camara.html" style="margin-left: 25px; color: rgb(255, 255, 255);">Live camara</a>
+        <a href="#" id="display" style="margin-left: 25px; color: rgb(255, 255, 255);">Add Student</a>
+        <a href="record.html" id="display" style="margin-left: 25px; color: rgb(255, 255, 255);">Student Record</a>
+    </label>
+    <hr>
+    <img id="output" style="display: none; max-width: 280px;" height="auto;" alt="Selected Image Preview" class="imagedeg">
+    
+    <div class="border" id="message" style="display:none">
+        <span class="close-btn" id="close">&times;</span>
+        <h2 style="margin-left:30px;">student record</h2>
+        <form method="POST" action="/student" enctype="multipart/form-data">
+            <a href="#" onclick="document.getElementById('image').click()">
+                <input type="file" id="image" name="image" accept="image/*"hidden><i class="desins"> person</i>
+            </a>
+            <br><br>
+          <label for="id">ID Number</label><br>
+          <input type="text" name="id" placeholder="Enter the id" required><br>
+          <label for="name">Student Name</label><br>
+          <input type="text" name="name" placeholder="Enter the name" required><br>
+          <br>
+          <input type="submit" name="submit" value="Submit"><br>
+          <br>
+          </form>
+        </div>
+
+    <script>
+        function chintu() {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            const height = Math.random() * window.innerHeight;
+            const width = Math.random() * window.innerWidth;
+            star.style.top = `${height}px`;
+            star.style.left = `${width}px`;
+            document.body.appendChild(star);
+            const size = Math.random() * 5 + 5;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            setTimeout(() => {
+                star.remove();
+            }, 5000);
+        }
+        function kumar() {
+            setInterval(chintu, 100);
+        }
+        kumar();
+
+        const image1 = document.getElementById("image1");
+        const output = document.getElementById("output");
+        window.onload = () => {
+            const saveimage = localStorage.getItem("saveimage");
+            if (saveimage) {
+                output.src = saveimage;
+                output.style.display = "block";
+            }
+        };
+        image1.addEventListener("change", function() {
+            if (image1.files && image1.files[0]) {
+                const file = image1.files[0];
+                const reload = new FileReader();
+                reload.onload = function(add) {
+                    output.src = add.target.result;
+                    output.style.display = "block";
+                    localStorage.setItem("saveimage", add.target.result);
+                };
+                reload.readAsDataURL(file);
+            } else {
+                alert("Something went wrong.");
+            }
+        });
+        let angle = -45;
+        output.addEventListener("click", () => {
+            angle += 3;
+            output.style.transform = `rotate3d(1,1,0,${angle}deg)`;
+        });
+        
+        document.getElementById("display").addEventListener("click", function() {
+            document.getElementById("message").style.display = "block";
+            localStorage.setItem("formVisible", "true");
+        });
+    
+        document.getElementById("close").addEventListener("click", function() {
+            document.getElementById("message").style.display = "none";
+            localStorage.removeItem("formVisible");
+        });
+        
+        document.querySelector("form").addEventListener("submit", function(event) {
+    setTimeout(() => {
+        this.reset(); // Resets all form fields
+    }, 100); // Small delay to ensure form submission happens first
+});
+
+document.querySelector("form").addEventListener("submit", function(event) {
+    event.preventDefault();
+    
+    let formData = new FormData(this);
+    
+    fetch("/student", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.text())
+    .then(data => {
+        console.log(data);
+    })
+    .catch(error => console.error("Error:", error));
+});
+
+    </script>
+</body>
+</html>
