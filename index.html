@@ -6,40 +6,40 @@
   <title>Open Camera</title>
   <style>
     body {
-  margin: 0;
-  height:auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  background-color: #f0f0f0;
-}
+      margin: 0;
+      height:auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background-color: #f0f0f0;
+    }
 
-#video-container {
-  position: relative;
-  display: inline-block;
-}
+    #video-container {
+      position: relative;
+      display: inline-block;
+    }
 
-video {
-  width: 100%;
-  height: auto;
-  border: 2px solid #333;
-  border-radius: 10px;
-}
+    video {
+      width: 100%;
+      height: auto;
+      border: 2px solid #333;
+      border-radius: 10px;
+    }
 
-canvas {
-  position: absolute;
-  left: 0;
-  top:0;
-}
+    canvas {
+      position: absolute;
+      left: 0;
+      top:0;
+    }
 
-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
@@ -49,17 +49,24 @@ button {
   </div>
   <br>
   <button onclick="chintu()">Open Camera</button>
+  <button id="toggleCamBtn">Switch Camera</button>
 
   <!-- Load face-api.js -->
   <script src="face-api.js"></script>
 
   <script>
     const video = document.getElementById('video');
+    let currentFacingMode = "environment"; // Start with back camera
+    let stream;
 
     async function chintu() {
+      if (stream) {
+        // stop any existing tracks before opening new
+        stream.getTracks().forEach(track => track.stop());
+      }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: currentFacingMode },
           audio: false
         });
         video.srcObject = stream;
@@ -69,33 +76,72 @@ button {
       }
     }
 
+    document.getElementById('toggleCamBtn').addEventListener('click', () => {
+      // Toggle camera facing mode
+      currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+      chintu();
+    });
+
     Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
-    faceapi.nets.faceLandmark68Net.loadFromUri('./models'),
-    faceapi.nets.faceRecognitionNet.loadFromUri('./models')
-    ]).then(() => {
-      console.log("Models loaded");
+  faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
+  faceapi.nets.faceLandmark68Net.loadFromUri('./models'),
+  faceapi.nets.faceRecognitionNet.loadFromUri('./models'),
+  faceapi.nets.ageGenderNet.loadFromUri('./models'),        // Add age and gender model
+  faceapi.nets.faceExpressionNet.loadFromUri('./models')    // Add expression model
+]).then(() => {
+  console.log("All models loaded");
+});
+
+video.addEventListener("play", async () => {
+  const canvas = faceapi.createCanvasFromMedia(video);
+  document.getElementById('video-container').appendChild(canvas);
+
+  const displaySize = { width: video.videoWidth, height: video.videoHeight };
+  faceapi.matchDimensions(canvas, displaySize);
+
+  setInterval(async () => {
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptors()
+      .withAgeAndGender()          // Added age and gender detection
+      .withFaceExpressions();      // Added expression detection
+
+    const resizedDetections = faceapi.resizeResults(detections, displaySize);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    faceapi.draw.drawDetections(canvas, resizedDetections);
+    faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+
+    resizedDetections.forEach(detection => {
+      const { age, gender, genderProbability, expressions, detection: box } = detection;
+      const textLines = [
+        `Age: ${age.toFixed(0)}`,
+        `Gender: ${gender} (${(genderProbability*100).toFixed(0)}%)`
+      ];
+
+      // Find the expression with highest probability
+      const maxExpression = Object.entries(expressions)
+        .reduce((max, curr) => curr[1] > max[1] ? curr : max);
+
+      textLines.push(`Expression: ${maxExpression[0]}`);
+
+      const x = box.box.x;
+      const y = box.box.y > 10 ? box.box.y - 80 : box.box.y + 10;
+
+      ctx.font = "20px Arial";
+      ctx.fillStyle = "#fff";
+      ctx.textBaseline = "top";
+
+      // Draw each line of text above the face box
+      textLines.forEach((line, i) => {
+        ctx.fillText(line, x, y + i * 18);
+      });
     });
 
-    video.addEventListener("play", async () => {
-      const canvas = faceapi.createCanvasFromMedia(video);
-      document.getElementById('video-container').appendChild(canvas);
-
-      const displaySize = { width: video.videoWidth, height: video.videoHeight };
-      faceapi.matchDimensions(canvas, displaySize);
-
-      setInterval(async () => {
-        const detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-          .withFaceLandmarks()
-          .withFaceDescriptors(); // Fixed method name
-
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-        canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-        faceapi.draw.drawDetections(canvas, resizedDetections);
-        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-      }, 100);
-    });
+  }, 100);
+});
   </script>
 </body>
 </html>
